@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museum AR Experience</title>
+    <meta name="description" content="Experience art like never before with AR technology">
+    
+    <!-- MindAR Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a0b3d 0%, #2d1b69 50%, #6366f1 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+        
+        .hero {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #f8fafc, #f59e0b);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+        
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #f59e0b, #fbbf24);
+            color: #1e293b;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f8fafc;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #f59e0b;
+        }
+        
+        /* AR Container */
+        #ar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .ar-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+        
+        .ar-close-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .ar-close-btn:hover {
+            background: #dc2626;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 11, 61, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            z-index: 1001;
+            max-width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .notification.success {
+            background: linear-gradient(45deg, #10b981, #059669);
+        }
+        
+        .notification.error {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- AR Container -->
+    <div id="ar-container">
+        <div class="ar-controls">
+            <button class="ar-close-btn" onclick="stopARExperience()">✕ Close AR</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">MuseumAR</div>
+            <p>Step into History with Augmented Reality</p>
+        </header>
+        
+        <div class="hero">
+            <h1>Experience Art Like Never Before</h1>
+            <p>Immerse yourself in our revolutionary AR-powered museum experience. Discover hidden stories, interact with ancient artifacts, and journey through time.</p>
+            
+            <div class="cta-buttons">
+                <button class="btn btn-primary" onclick="startARExperience()">
+                    🔍 Start AR Experience
+                </button>
+                <button class="btn btn-secondary" onclick="startAudioGuide()">
+                    🎧 Launch Audio Guide
+                </button>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <span class="feature-icon">🎯</span>
+                <h3>AR Object Recognition</h3>
+                <p>Point your device at exhibits to unlock interactive 3D models and historical context powered by MindAR technology.</p>
+            </div>
+            
+            <div class="feature-card">
+                <span class="feature-icon">🎧</span>
+                <h3>Smart Audio Guide</h3>
+                <p>Enjoy personalized audio tours that adapt to your interests and pace. Multiple languages available.</p>
+            </div>
+            
+            <div class="feature-card">
+                <span class="feature-icon">🌟</span>
+                <h3>Interactive Experiences</h3>
+                <p>Engage with virtual reconstructions and expert commentary that brings artifacts to life.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="assets/js/mindar-setup.js"></script>
+    <script>
+        let mindArApp = null;
+        
+        function startARExperience() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showNotification('AR requires a modern browser with camera support', 'error');
+                return;
+            }
+            
+            showLoading('Initializing AR Camera...');
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    setTimeout(() => {
+                        hideLoading();
+                        launchMindAR();
+                    }, 2000);
+                })
+                .catch(function(err) {
+                    hideLoading();
+                    showNotification('Camera access required for AR. Please enable permissions.', 'error');
+                });
+        }
+        
+        function launchMindAR() {
+            const arContainer = document.getElementById('ar-container');
+            arContainer.style.display = 'block';
+            
+            if (typeof initializeMindAR === 'function') {
+                mindArApp = initializeMindAR(arContainer);
+                showNotification('AR Ready! Point camera at exhibits.', 'success');
+            } else {
+                showNotification('MindAR setup not found. Check file structure.', 'error');
+                stopARExperience();
+            }
+        }
+        
+        function stopARExperience() {
+            const arContainer = document.getElementById('ar-container');
+            arContainer.style.display = 'none';
+            
+            if (mindArApp && mindArApp.stop) {
+                mindArApp.stop();
+                mindArApp = null;
+            }
+        }
+        
+        function startAudioGuide() {
+            showLoading('Loading Audio Guide...');
+            setTimeout(() => {
+                hideLoading();
+                showNotification('Audio Guide activated!', 'success');
+            }, 1500);
+        }
+        
+        function showLoading(message) {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.id = 'loading';
+            overlay.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
+                <div>${message}</div>
+                <div style="margin-top: 1rem; opacity: 0.7;">Please wait...</div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        function hideLoading() {
+            const overlay = document.getElementById('loading');
+            if (overlay) overlay.remove();
+        }
+        
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <span style="margin-right: 0.5rem;">${type === 'success' ? '✅' : '❌'}</span>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.remove(), 4000);
+        }
+    </script>
+</body>
+</html>
