@@ -1,4 +1,8 @@
 // assets/js/mindar-setup.js
+// NOTE: This file must be loaded AFTER MindAR and Three.js scripts in your HTML.
+// Do NOT use ES6 import/export here. Use only global variables (window.MINDAR, window.THREE).
+// If you see 'Cannot use import statement outside a module', check your script tags and do not use import/export in this file.
+// Also, verify the path to './assets/models/targets.mind' and your audio files are correct and exist.
 
 // MindAR Configuration and Setup
 function initializeMindAR(container) {
@@ -7,7 +11,10 @@ function initializeMindAR(container) {
     try {
         // Check if MindAR library is loaded onto the window object
         if (typeof window.MINDAR === 'undefined' || typeof window.THREE === 'undefined') {
-            throw new Error('MindAR or Three.js library not loaded. Check script tags in HTML.');
+            let missing = [];
+            if (typeof window.MINDAR === 'undefined') missing.push('MindAR');
+            if (typeof window.THREE === 'undefined') missing.push('Three.js');
+            throw new Error((missing.length ? missing.join(' and ') : 'MindAR or Three.js') + ' library not loaded. Check script tags in HTML and their order.');
         }
         
         // Initialize MindAR with your target images
