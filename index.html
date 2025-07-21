@@ -201,10 +201,10 @@
     </div>
     <a-scene id="ar-fullscreen" mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: true;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-assets>
-        <!-- You can add 3D models or images here -->
+        <audio id="moses-audio" src="./assets/audio/exhibit1.mp3"></audio>
       </a-assets>
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity id="moses-target" mindar-image-target="targetIndex: 0">
         <a-text value="Explore the Moses frescoes" color="#FFD700" align="center" position="0 0 0" scale="0.5 0.5 0.5"></a-text>
       </a-entity>
     </a-scene>
@@ -241,6 +241,21 @@
             document.body.appendChild(notification);
             setTimeout(() => notification.remove(), 4000);
         }
+        // Play audio when image is detected
+        document.addEventListener('DOMContentLoaded', function() {
+          const mosesTarget = document.querySelector('#moses-target');
+          const mosesAudio = document.querySelector('#moses-audio');
+          if (mosesTarget && mosesAudio) {
+            mosesTarget.addEventListener('targetFound', () => {
+              mosesAudio.currentTime = 0;
+              mosesAudio.play();
+            });
+            mosesTarget.addEventListener('targetLost', () => {
+              mosesAudio.pause();
+              mosesAudio.currentTime = 0;
+            });
+          }
+        });
     </script>
 </body>
 </html>
