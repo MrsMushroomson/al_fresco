@@ -316,11 +316,55 @@
             // Crucial debug log: Check if dimensions are non-zero
             console.log('AR container made visible. Current dimensions:', arContainer.offsetWidth, 'x', arContainer.offsetHeight);
             
+            // Extra check for MindAR and THREE globals
+            if (typeof window.MINDAR === 'undefined' || typeof window.THREE === 'undefined') {
+                showErrorOverlay('MindAR or Three.js library not loaded. Check script tags and their order in your HTML.');
+                console.error('MindAR or Three.js library not loaded.');
+                stopARExperience();
+                return;
+            }
+            
             if (typeof initializeMindAR === 'function') {
-                // Pass the arContainer element to MindAR's initialization
-                mindArApp = initializeMindAR(arContainer);
-                showNotification('AR Ready! Point camera at exhibits.', 'success');
+                try {
+                    // Pass the arContainer element to MindAR's initialization
+                    mindArApp = initializeMindAR(arContainer);
+                    showNotification('AR Ready! Point camera at exhibits.', 'success');
+                    // Extra debug: check for MindAR canvas/video elements
+                    setTimeout(() => {
+                        const video = arContainer.querySelector('video');
+                        const canvas = arContainer.querySelector('canvas');
+                        if (!video) {
+                            showErrorOverlay('MindAR did not create a video element. Check MindAR initialization and permissions.');
+                            console.error('MindAR: No video element found in AR container.');
+                        } else {
+                            console.log('MindAR video element found:', video.width, 'x', video.height, 'display:', getComputedStyle(video).display);
+                        }
+                        if (!canvas) {
+                            showErrorOverlay('MindAR did not create a canvas element.');
+                            console.error('MindAR: No canvas element found in AR container.');
+                        } else {
+                            console.log('MindAR canvas element found:', canvas.width, 'x', canvas.height, 'display:', getComputedStyle(canvas).display);
+                        }
+                        // Check if targets.mind file exists (HEAD request)
+                        fetch('./assets/models/targets.mind', { method: 'HEAD' })
+                          .then(resp => {
+                            if (!resp.ok) {
+                              showNotification('Warning: targets.mind file not found. AR tracking will not work.', 'error');
+                              showErrorOverlay('targets.mind file not found at ./assets/models/targets.mind. Please check the path and file.');
+                            }
+                          })
+                          .catch(() => {
+                            showNotification('Warning: targets.mind file not found. AR tracking will not work.', 'error');
+                            showErrorOverlay('targets.mind file not found at ./assets/models/targets.mind. Please check the path and file.');
+                          });
+                      }, 2000);
+                } catch (e) {
+                    showErrorOverlay('MindAR failed to initialize: ' + e.message);
+                    console.error('MindAR initialization error:', e);
+                    stopARExperience();
+                }
             } else {
+                showErrorOverlay('MindAR setup not found. Check file structure or function name.');
                 showNotification('MindAR setup not found. Check file structure or function name.', 'error');
                 console.error('Error: initializeMindAR function not found.'); // Specific error for debugging
                 stopARExperience();
@@ -379,6 +423,31 @@
             document.body.appendChild(notification);
             
             setTimeout(() => notification.remove(), 4000);
+        }
+        
+        function showErrorOverlay(message) {
+            let overlay = document.getElementById('ar-error-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'ar-error-overlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100vw';
+                overlay.style.height = '100vh';
+                overlay.style.background = 'rgba(0,0,0,0.95)';
+                overlay.style.color = '#fff';
+                overlay.style.zIndex = '10001';
+                overlay.style.display = 'flex';
+                overlay.style.flexDirection = 'column';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.style.fontSize = '1.3rem';
+                overlay.innerHTML = `<div style="max-width:600px;text-align:center;"><div style='font-size:3rem;margin-bottom:1rem;'>❌</div><div>${message}</div><button onclick='document.getElementById("ar-error-overlay").remove();stopARExperience();' style='margin-top:2rem;padding:1rem 2rem;font-size:1rem;border-radius:30px;background:#ef4444;color:#fff;border:none;cursor:pointer;'>Close</button></div>`;
+                document.body.appendChild(overlay);
+            } else {
+                overlay.querySelector('div').innerHTML = message;
+            }
         }
     </script>
 </body>
