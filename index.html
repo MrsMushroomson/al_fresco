@@ -138,6 +138,17 @@
             color: #f59e0b;
         }
         
+        a-scene#ar-fullscreen {
+          position: fixed !important;
+          top: 0;
+          left: 0;
+          width: 100vw !important;
+          height: 100vh !important;
+          z-index: 10000;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -188,7 +199,7 @@
             </div>
         </div>
     </div>
-    <a-scene mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: true;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene id="ar-fullscreen" mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: true;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-assets>
         <!-- You can add 3D models or images here -->
       </a-assets>
