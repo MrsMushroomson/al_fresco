@@ -6,9 +6,6 @@
     <title>Museum AR Experience</title>
     <meta name="description" content="Experience art like never before with AR technology">
     
-    <script src="https://unpkg.com/mind-ar@1.2.4/dist/mindar-image-three.prod.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
     <style>
         * {
             margin: 0;
@@ -277,7 +274,10 @@
         </div>
     </div>
     
-    <script src="assets/js/mindar-setup.js"></script> 
+    <!-- Move scripts to end of body for correct loading order -->
+    <script src="https://unpkg.com/mind-ar@1.2.4/dist/mindar-image-three.prod.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="assets/js/mindar-setup.js"></script>
     <script>
         let mindArApp = null;
         
