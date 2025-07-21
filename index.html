@@ -138,78 +138,6 @@
             color: #f59e0b;
         }
         
-        /* AR Container - CORRECTED STYLES */
-        #ar-container {
-            position: fixed; /* Use 'fixed' to cover the whole viewport regardless of scroll */
-            top: 0;
-            left: 0;
-            width: 100vw;   /* Changed to viewport width for robustness */
-            height: 100vh;  /* Changed to viewport height for robustness */
-            background: #000; /* Initial black background */
-            z-index: 9999; /* Ensure it's on top of other content */
-            display: none; /* Initially hidden */
-            overflow: hidden; /* Important for AR container */
-        }
-        
-        .ar-controls {
-            position: absolute; /* Changed from absolute to fixed if you want it to stay put with ar-container */
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-        }
-        
-        .ar-close-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        
-        .ar-close-btn:hover {
-            background: #dc2626;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(26, 11, 61, 0.9);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            color: white;
-            font-size: 1.2rem;
-            backdrop-filter: blur(10px);
-        }
-        
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            border-radius: 10px;
-            z-index: 1001;
-            max-width: 300px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            color: white;
-            font-weight: 600;
-        }
-        
-        .notification.success {
-            background: linear-gradient(45deg, #10b981, #059669);
-        }
-        
-        .notification.error {
-            background: linear-gradient(45deg, #ef4444, #dc2626);
-        }
-        
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -224,59 +152,42 @@
             }
         }
     </style>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.3/dist/mindar-image-aframe.prod.js"></script>
 </head>
 <body>
-    <div id="ar-container">
-        <div class="ar-controls">
-            <button class="ar-close-btn" onclick="stopARExperience()">✕ Close AR</button>
-        </div>
-    </div>
-    
     <div class="container">
         <header>
             <div class="logo">MuseumAR</div>
             <p>Step into History with Augmented Reality</p>
         </header>
-        
         <div class="hero">
             <h1>Experience Art Like Never Before</h1>
             <p>Immerse yourself in our revolutionary AR-powered museum experience. Discover hidden stories, interact with ancient artifacts, and journey through time.</p>
-            
             <div class="cta-buttons">
-                <button class="btn btn-primary" onclick="startARExperience()">
-                    🔍 Start AR Experience
-                </button>
                 <button class="btn btn-secondary" onclick="startAudioGuide()">
                     🎧 Launch Audio Guide
                 </button>
             </div>
         </div>
-        
         <div class="features">
             <div class="feature-card">
                 <span class="feature-icon">🎯</span>
                 <h3>AR Object Recognition</h3>
                 <p>Point your device at exhibits to unlock interactive 3D models and historical context powered by MindAR technology.</p>
             </div>
-            
             <div class="feature-card">
                 <span class="feature-icon">🎧</span>
                 <h3>Smart Audio Guide</h3>
                 <p>Enjoy personalized audio tours that adapt to your interests and pace. Multiple languages available.</p>
             </div>
-            
             <div class="feature-card">
                 <span class="feature-icon">🌟</span>
                 <h3>Interactive Experiences</h3>
                 <p>Engage with virtual reconstructions and expert commentary that brings artifacts to life.</p>
-            </p>
             </div>
         </div>
     </div>
-    
-    <!-- Minimal MindAR + A-Frame AR Example -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.3/dist/mindar-image-aframe.prod.js"></script>
     <a-scene mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: true;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-assets>
         <!-- You can add 3D models or images here -->
@@ -287,114 +198,6 @@
       </a-entity>
     </a-scene>
     <script>
-        let mindArApp = null;
-        
-        function startARExperience() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                showNotification('AR requires a modern browser with camera support', 'error');
-                return;
-            }
-            
-            showLoading('Initializing AR Camera...');
-            
-            // This getUserMedia is just for permission check,
-            // MindAR will handle the actual stream acquisition
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(stream) {
-                    // Stop the stream immediately after getting permission,
-                    // MindAR will request its own stream.
-                    stream.getTracks().forEach(track => track.stop());
-                    
-                    setTimeout(() => {
-                        hideLoading();
-                        launchMindAR();
-                    }, 2000); // Gives a bit of time for loading message
-                })
-                .catch(function(err) {
-                    hideLoading();
-                    showNotification('Camera access required for AR. Please enable permissions.', 'error');
-                    console.error('getUserMedia error:', err); // Log the actual error
-                });
-        }
-        
-        function launchMindAR() {
-            const arContainer = document.getElementById('ar-container');
-            arContainer.style.display = 'block';
-            
-            // Crucial debug log: Check if dimensions are non-zero
-            console.log('AR container made visible. Current dimensions:', arContainer.offsetWidth, 'x', arContainer.offsetHeight);
-            
-            // Extra check for MindAR and THREE globals
-            if (typeof window.MINDAR === 'undefined' || typeof window.THREE === 'undefined') {
-                showErrorOverlay('MindAR or Three.js library not loaded. Check script tags and their order in your HTML.');
-                console.error('MindAR or Three.js library not loaded.');
-                stopARExperience();
-                return;
-            }
-            
-            if (typeof initializeMindAR === 'function') {
-                try {
-                    // Pass the arContainer element to MindAR's initialization
-                    mindArApp = initializeMindAR(arContainer);
-                    showNotification('AR Ready! Point camera at exhibits.', 'success');
-                    // Extra debug: check for MindAR canvas/video elements
-                    setTimeout(() => {
-                        const video = arContainer.querySelector('video');
-                        const canvas = arContainer.querySelector('canvas');
-                        if (!video) {
-                            showErrorOverlay('MindAR did not create a video element. Check MindAR initialization and permissions.');
-                            console.error('MindAR: No video element found in AR container.');
-                        } else {
-                            console.log('MindAR video element found:', video.width, 'x', video.height, 'display:', getComputedStyle(video).display);
-                        }
-                        if (!canvas) {
-                            showErrorOverlay('MindAR did not create a canvas element.');
-                            console.error('MindAR: No canvas element found in AR container.');
-                        } else {
-                            console.log('MindAR canvas element found:', canvas.width, 'x', canvas.height, 'display:', getComputedStyle(canvas).display);
-                        }
-                        // Check if targets.mind file exists (HEAD request)
-                        fetch('./assets/models/targets.mind', { method: 'HEAD' })
-                          .then(resp => {
-                            if (!resp.ok) {
-                              showNotification('Warning: targets.mind file not found. AR tracking will not work.', 'error');
-                              showErrorOverlay('targets.mind file not found at ./assets/models/targets.mind. Please check the path and file.');
-                            }
-                          })
-                          .catch(() => {
-                            showNotification('Warning: targets.mind file not found. AR tracking will not work.', 'error');
-                            showErrorOverlay('targets.mind file not found at ./assets/models/targets.mind. Please check the path and file.');
-                          });
-                      }, 2000);
-                } catch (e) {
-                    showErrorOverlay('MindAR failed to initialize: ' + e.message);
-                    console.error('MindAR initialization error:', e);
-                    stopARExperience();
-                }
-            } else {
-                showErrorOverlay('MindAR setup not found. Check file structure or function name.');
-                showNotification('MindAR setup not found. Check file structure or function name.', 'error');
-                console.error('Error: initializeMindAR function not found.'); // Specific error for debugging
-                stopARExperience();
-            }
-        }
-        
-        function stopARExperience() {
-            const arContainer = document.getElementById('ar-container');
-            arContainer.style.display = 'none';
-            
-            if (mindArApp && mindArApp.stop) {
-                mindArApp.stop(); // Stop the MindAR app
-                // If MindAR creates its own canvas, you might need to remove it manually
-                // or ensure MindAR's stop method cleans it up.
-                // For example:
-                // if (arContainer.children.length > 1) { // 1 for ar-controls, more for MindAR's canvas
-                //    arContainer.removeChild(arContainer.lastChild);
-                // }
-                mindArApp = null;
-            }
-        }
-        
         function startAudioGuide() {
             showLoading('Loading Audio Guide...');
             setTimeout(() => {
@@ -402,7 +205,6 @@
                 showNotification('Audio Guide activated!', 'success');
             }, 1500);
         }
-        
         function showLoading(message) {
             const overlay = document.createElement('div');
             overlay.className = 'loading-overlay';
@@ -414,12 +216,10 @@
             `;
             document.body.appendChild(overlay);
         }
-        
         function hideLoading() {
             const overlay = document.getElementById('loading');
             if (overlay) overlay.remove();
         }
-        
         function showNotification(message, type) {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -427,35 +227,8 @@
                 <span style="margin-right: 0.5rem;">${type === 'success' ? '✅' : '❌'}</span>
                 ${message}
             `;
-            
             document.body.appendChild(notification);
-            
             setTimeout(() => notification.remove(), 4000);
-        }
-        
-        function showErrorOverlay(message) {
-            let overlay = document.getElementById('ar-error-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'ar-error-overlay';
-                overlay.style.position = 'fixed';
-                overlay.style.top = '0';
-                overlay.style.left = '0';
-                overlay.style.width = '100vw';
-                overlay.style.height = '100vh';
-                overlay.style.background = 'rgba(0,0,0,0.95)';
-                overlay.style.color = '#fff';
-                overlay.style.zIndex = '10001';
-                overlay.style.display = 'flex';
-                overlay.style.flexDirection = 'column';
-                overlay.style.justifyContent = 'center';
-                overlay.style.alignItems = 'center';
-                overlay.style.fontSize = '1.3rem';
-                overlay.innerHTML = `<div style="max-width:600px;text-align:center;"><div style='font-size:3rem;margin-bottom:1rem;'>❌</div><div>${message}</div><button onclick='document.getElementById("ar-error-overlay").remove();stopARExperience();' style='margin-top:2rem;padding:1rem 2rem;font-size:1rem;border-radius:30px;background:#ef4444;color:#fff;border:none;cursor:pointer;'>Close</button></div>`;
-                document.body.appendChild(overlay);
-            } else {
-                overlay.querySelector('div').innerHTML = message;
-            }
         }
     </script>
 </body>
