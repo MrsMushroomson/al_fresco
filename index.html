@@ -6,7 +6,6 @@
     <title>Museum AR Experience</title>
     <meta name="description" content="Experience art like never before with AR technology">
     
-    <!-- MindAR Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
@@ -21,8 +20,8 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #1a0b3d 0%, #2d1b69 50%, #6366f1 100%);
             color: #f8fafc;
-            min-height: 100vh;
-            overflow-x: hidden;
+            min-height: 100vh; /* Ensure body takes at least full viewport height */
+            overflow: hidden; /* Changed from overflow-x: hidden; to cover both axes and prevent scrollbars when AR is active */
         }
         
         .container {
@@ -142,20 +141,21 @@
             color: #f59e0b;
         }
         
-        /* AR Container */
+        /* AR Container - CORRECTED STYLES */
         #ar-container {
-            position: fixed;
+            position: fixed; /* Use 'fixed' to cover the whole viewport regardless of scroll */
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: none;
+            width: 100vw;   /* Changed to viewport width for robustness */
+            height: 100vh;  /* Changed to viewport height for robustness */
+            background: #000; /* Initial black background */
+            z-index: 9999; /* Ensure it's on top of other content */
+            display: none; /* Initially hidden */
+            overflow: hidden; /* Important for AR container */
         }
         
         .ar-controls {
-            position: absolute;
+            position: absolute; /* Changed from absolute to fixed if you want it to stay put with ar-container */
             top: 20px;
             right: 20px;
             z-index: 10000;
@@ -229,7 +229,6 @@
     </style>
 </head>
 <body>
-    <!-- AR Container -->
     <div id="ar-container">
         <div class="ar-controls">
             <button class="ar-close-btn" onclick="stopARExperience()">✕ Close AR</button>
@@ -273,11 +272,12 @@
                 <span class="feature-icon">🌟</span>
                 <h3>Interactive Experiences</h3>
                 <p>Engage with virtual reconstructions and expert commentary that brings artifacts to life.</p>
+            </p>
             </div>
         </div>
     </div>
     
-    <script src="assets/js/mindar-setup.js"></script>
+    <script src="assets/js/mindar-setup.js"></script> 
     <script>
         let mindArApp = null;
         
@@ -289,18 +289,23 @@
             
             showLoading('Initializing AR Camera...');
             
+            // This getUserMedia is just for permission check,
+            // MindAR will handle the actual stream acquisition
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(function(stream) {
+                    // Stop the stream immediately after getting permission,
+                    // MindAR will request its own stream.
                     stream.getTracks().forEach(track => track.stop());
                     
                     setTimeout(() => {
                         hideLoading();
                         launchMindAR();
-                    }, 2000);
+                    }, 2000); // Gives a bit of time for loading message
                 })
                 .catch(function(err) {
                     hideLoading();
                     showNotification('Camera access required for AR. Please enable permissions.', 'error');
+                    console.error('getUserMedia error:', err); // Log the actual error
                 });
         }
         
@@ -308,11 +313,16 @@
             const arContainer = document.getElementById('ar-container');
             arContainer.style.display = 'block';
             
+            // Crucial debug log: Check if dimensions are non-zero
+            console.log('AR container made visible. Current dimensions:', arContainer.offsetWidth, 'x', arContainer.offsetHeight);
+            
             if (typeof initializeMindAR === 'function') {
+                // Pass the arContainer element to MindAR's initialization
                 mindArApp = initializeMindAR(arContainer);
                 showNotification('AR Ready! Point camera at exhibits.', 'success');
             } else {
-                showNotification('MindAR setup not found. Check file structure.', 'error');
+                showNotification('MindAR setup not found. Check file structure or function name.', 'error');
+                console.error('Error: initializeMindAR function not found.'); // Specific error for debugging
                 stopARExperience();
             }
         }
@@ -322,7 +332,13 @@
             arContainer.style.display = 'none';
             
             if (mindArApp && mindArApp.stop) {
-                mindArApp.stop();
+                mindArApp.stop(); // Stop the MindAR app
+                // If MindAR creates its own canvas, you might need to remove it manually
+                // or ensure MindAR's stop method cleans it up.
+                // For example:
+                // if (arContainer.children.length > 1) { // 1 for ar-controls, more for MindAR's canvas
+                //    arContainer.removeChild(arContainer.lastChild);
+                // }
                 mindArApp = null;
             }
         }
