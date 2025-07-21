@@ -12,6 +12,7 @@
             padding: 0;
             box-sizing: border-box;
         }
+        .hidden { display: none !important; }
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -245,14 +246,17 @@
         document.addEventListener('DOMContentLoaded', function() {
           const mosesTarget = document.querySelector('#moses-target');
           const mosesAudio = document.querySelector('#moses-audio');
-          if (mosesTarget && mosesAudio) {
+          const container = document.querySelector('.container');
+          if (mosesTarget && mosesAudio && container) {
             mosesTarget.addEventListener('targetFound', () => {
               mosesAudio.currentTime = 0;
               mosesAudio.play();
+              container.classList.add('hidden');
             });
             mosesTarget.addEventListener('targetLost', () => {
               mosesAudio.pause();
               mosesAudio.currentTime = 0;
+              container.classList.remove('hidden');
             });
           }
         });
