@@ -271,23 +271,25 @@
     <div id="ar-container" class="hidden">
         <button class="ar-overlay" id="ar-back-btn">← Back</button>
         <a-scene id="ar-scene" 
-                 mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: false;" 
+                 mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.mind; autoStart: false;" 
                  color-space="sRGB" 
                  embedded 
                  arjs='sourceType: webcam;' 
                  vr-mode-ui="enabled: false" 
                  device-orientation-permission-ui="enabled: false">
             <a-assets>
-                <audio id="moses-audio" src="./assets/audio/exhibit1.mp3"></audio>
+                <audio id="moses-audio" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.wav" preload="auto"></audio>
             </a-assets>
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
             <a-entity id="moses-target" mindar-image-target="targetIndex: 0">
-                <a-text value="Mosè domanda al Faraone il permesso di lasciare l'Egitto con gli ebrei" 
-                        color="#091324" 
+                <a-text value="AR Target Detected! Point camera at any flat surface." 
+                        color="#ffffff" 
                         align="center" 
                         position="0 0 0" 
-                        scale="0.5 0.5 0.5">
+                        scale="0.8 0.8 0.8"
+                        background="color: rgba(0,0,0,0.7); opacity: 0.8">
                 </a-text>
+                <a-box position="0 -0.5 0" scale="0.3 0.3 0.3" color="#f59e0b" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"></a-box>
             </a-entity>
         </a-scene>
     </div>
@@ -300,79 +302,113 @@
         let arInitialized = false;
         let arScene = null;
 
-        function startARExperience() {
-            showLoading('Initializing AR Experience...');
-            
-            // Hide landing page and show AR container
-            document.getElementById('landing-page').classList.add('hidden');
-            document.getElementById('ar-container').classList.remove('hidden');
-            
-            // Initialize AR scene
-            if (!arInitialized) {
-                initializeAR();
-            } else {
-                // If already initialized, just start MindAR
-                startMindAR();
+        async function startARExperience() {
+            try {
+                showLoading('Requesting camera access...');
+                
+                // First, request camera permission
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
+                
+                showLoading('Initializing AR Experience...');
+                
+                // Hide landing page and show AR container
+                document.getElementById('landing-page').classList.add('hidden');
+                document.getElementById('ar-container').classList.remove('hidden');
+                
+                // Initialize AR scene with timeout
+                if (!arInitialized) {
+                    await initializeAR();
+                } else {
+                    await startMindAR();
+                }
+                
+            } catch (error) {
+                console.error('AR initialization failed:', error);
+                hideLoading();
+                if (error.name === 'NotAllowedError') {
+                    showNotification('Camera access denied. Please allow camera access and try again.', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    showNotification('No camera found on your device.', 'error');
+                } else {
+                    showNotification('Failed to initialize AR: ' + error.message, 'error');
+                }
+                stopARExperience();
             }
         }
 
         function initializeAR() {
-            arScene = document.getElementById('ar-scene');
-            
-            // Wait for scene to be ready
-            if (arScene.hasLoaded) {
-                setupARScene();
-            } else {
-                arScene.addEventListener('loaded', setupARScene, { once: true });
-            }
-        }
-
-        function setupARScene() {
-            console.log('AR Scene loaded, setting up MindAR...');
-            
-            // Setup target events
-            const mosesTarget = document.querySelector('#moses-target');
-            const mosesAudio = document.querySelector('#moses-audio');
-            
-            if (mosesTarget && mosesAudio) {
-                mosesTarget.addEventListener('targetFound', () => {
-                    console.log('Target found!');
-                    mosesAudio.currentTime = 0;
-                    mosesAudio.play().catch(e => console.log('Audio play failed:', e));
-                });
+            return new Promise((resolve, reject) => {
+                arScene = document.getElementById('ar-scene');
                 
-                mosesTarget.addEventListener('targetLost', () => {
-                    console.log('Target lost!');
-                    mosesAudio.pause();
-                    mosesAudio.currentTime = 0;
-                });
-            }
-            
-            arInitialized = true;
-            startMindAR();
-        }
-
-        function startMindAR() {
-            setTimeout(() => {
-                const mindarComponent = arScene.components['mindar-image'];
+                // Set a timeout to prevent freezing
+                const timeout = setTimeout(() => {
+                    reject(new Error('AR initialization timeout'));
+                }, 10000); // 10 second timeout
                 
-                if (mindarComponent) {
-                    console.log('Starting MindAR...');
-                    mindarComponent.start().then(() => {
-                        hideLoading();
-                        showNotification('AR Experience activated!', 'success');
-                        console.log('MindAR started successfully');
-                    }).catch(error => {
-                        hideLoading();
-                        showNotification('Failed to start AR. Check camera permissions.', 'error');
-                        console.error('MindAR start failed:', error);
-                    });
-                } else {
-                    hideLoading();
-                    showNotification('MindAR component not found', 'error');
-                    console.error('MindAR component not found');
+                function setupARScene() {
+                    clearTimeout(timeout);
+                    console.log('AR Scene loaded, setting up MindAR...');
+                    
+                    // Setup target events
+                    const mosesTarget = document.querySelector('#moses-target');
+                    const mosesAudio = document.querySelector('#moses-audio');
+                    
+                    if (mosesTarget && mosesAudio) {
+                        mosesTarget.addEventListener('targetFound', () => {
+                            console.log('Target found!');
+                            mosesAudio.currentTime = 0;
+                            mosesAudio.play().catch(e => console.log('Audio play failed:', e));
+                        });
+                        
+                        mosesTarget.addEventListener('targetLost', () => {
+                            console.log('Target lost!');
+                            mosesAudio.pause();
+                            mosesAudio.currentTime = 0;
+                        });
+                    }
+                    
+                    arInitialized = true;
+                    resolve();
                 }
-            }, 500); // Give a moment for the scene to fully render
+                
+                if (arScene.hasLoaded) {
+                    setupARScene();
+                } else {
+                    arScene.addEventListener('loaded', setupARScene, { once: true });
+                }
+            });
+        }
+
+        async function startMindAR() {
+            return new Promise((resolve, reject) => {
+                // Set a timeout to prevent freezing
+                const timeout = setTimeout(() => {
+                    reject(new Error('MindAR start timeout'));
+                }, 8000); // 8 second timeout
+                
+                setTimeout(async () => {
+                    try {
+                        const mindarComponent = arScene.components['mindar-image'];
+                        
+                        if (mindarComponent) {
+                            console.log('Starting MindAR...');
+                            await mindarComponent.start();
+                            clearTimeout(timeout);
+                            hideLoading();
+                            showNotification('AR Experience activated!', 'success');
+                            console.log('MindAR started successfully');
+                            resolve();
+                        } else {
+                            clearTimeout(timeout);
+                            reject(new Error('MindAR component not found'));
+                        }
+                    } catch (error) {
+                        clearTimeout(timeout);
+                        reject(error);
+                    }
+                }, 500);
+            });
         }
 
         function stopARExperience() {
