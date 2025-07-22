@@ -271,14 +271,14 @@
     <div id="ar-container" class="hidden">
         <button class="ar-overlay" id="ar-back-btn">← Back</button>
         <a-scene id="ar-scene" 
-                 mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/card.mind; autoStart: false;" 
+                 mindar-image="imageTargetSrc:.assets/models/targets.mind; autoStart: false;" 
                  color-space="sRGB" 
                  embedded 
                  vr-mode-ui="enabled: false" 
                  device-orientation-permission-ui="enabled: false"
                  renderer="colorManagement: true, physicallyCorrectLights">
             <a-assets>
-                <audio id="moses-audio" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.wav" preload="auto" crossorigin="anonymous"></audio>
+                <audio id="moses-audio" src="./assets/audio/exhibit1.mp3" preload="auto" crossorigin="anonymous"></audio>
             </a-assets>
             <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse"></a-camera>
             <a-entity id="moses-target" mindar-image-target="targetIndex: 0">
