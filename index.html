@@ -12,20 +12,25 @@
             padding: 0;
             box-sizing: border-box;
         }
-        .hidden { display: none !important; }
+        .hidden { 
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #014421 0%, #228B22 50%, #32CD32 100%);
             color: #f8fafc;
-            min-height: 100vh; /* Ensure body takes at least full viewport height */
-            overflow: hidden; /* Changed from overflow-x: hidden; to cover both axes and prevent scrollbars when AR is active */
+            min-height: 100vh;
+            overflow-x: hidden;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
+            transition: all 0.3s ease;
         }
         
         header {
@@ -139,15 +144,76 @@
             color: #f59e0b;
         }
         
-        a-scene#ar-fullscreen {
-          position: fixed !important;
-          top: 0;
-          left: 0;
-          width: 100vw !important;
-          height: 100vh !important;
-          z-index: 10000;
-          margin: 0 !important;
-          padding: 0 !important;
+        #ar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10000;
+            transition: all 0.3s ease;
+        }
+        
+        a-scene {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .ar-overlay {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            z-index: 12000;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 32px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 11000;
+            color: #f8fafc;
+            font-size: 1.2rem;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            z-index: 11000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .notification.success {
+            background: #10b981;
+        }
+        
+        .notification.error {
+            background: #ef4444;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         
         @media (max-width: 768px) {
@@ -164,12 +230,9 @@
             }
         }
     </style>
-    <!-- Moved MindAR scripts here for global access -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="landing-page">
         <header>
             <div class="logo">MuseumAR</div>
             <p>Step into History with Augmented Reality</p>
@@ -181,9 +244,9 @@
                 <button class="btn btn-secondary" onclick="startAudioGuide()">
                     🎧 Launch Audio Guide
                 </button>
-            <button class="btn btn-primary" onclick="startARExperience()">
-                 🕶️ Start AR Experience
-            </button>
+                <button class="btn btn-primary" onclick="startARExperience()">
+                    🕶️ Start AR Experience
+                </button>
             </div>
         </div>
         <div class="features">
@@ -204,95 +267,133 @@
             </div>
         </div>
     </div>
-    <a-scene id="ar-fullscreen" class="hidden" mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: false;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      <a-assets>
-        <audio id="moses-audio" src="./assets/audio/exhibit1.mp3"></audio>
-      </a-assets>
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity id="moses-target" mindar-image-target="targetIndex: 0">
-        <a-text value="Mosè domanda al Faraone il permesso di lasciare l’Egitto con gli ebrei" color="#091324" align="center" position="0 0 0" scale="0.5 0.5 0.5"></a-text>
-      </a-entity>
-    </a-scene>
-    <!-- Back Button for AR Experience (moved outside a-scene) -->
-    <div id="ar-back-btn" style="
-        position: fixed;
-        top: 24px;
-        left: 24px;
-        z-index: 12000;
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        padding: 0.75rem 1.5rem;
-        border-radius: 32px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        cursor: pointer;
-        border: none;
-        outline: none;
-        display: none;
-        ">
-        ← Back
-    </div>
-        <script>
-    function startARExperience() {
-        document.querySelector('.container').classList.add('hidden');
-        document.getElementById('ar-fullscreen').classList.remove('hidden');
-        document.getElementById('ar-back-btn').style.display = "block";
 
-        const scene = document.getElementById('ar-fullscreen');
-        function startMindAR() {
-            const mindar = scene.components && scene.components['mindar-image'];
-            console.log('MindAR component:', mindar);
-            if (mindar && typeof mindar.start === 'function') {
-                mindar.start();
+    <div id="ar-container" class="hidden">
+        <button class="ar-overlay" id="ar-back-btn">← Back</button>
+        <a-scene id="ar-scene" 
+                 mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: false;" 
+                 color-space="sRGB" 
+                 embedded 
+                 arjs='sourceType: webcam;' 
+                 vr-mode-ui="enabled: false" 
+                 device-orientation-permission-ui="enabled: false">
+            <a-assets>
+                <audio id="moses-audio" src="./assets/audio/exhibit1.mp3"></audio>
+            </a-assets>
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+            <a-entity id="moses-target" mindar-image-target="targetIndex: 0">
+                <a-text value="Mosè domanda al Faraone il permesso di lasciare l'Egitto con gli ebrei" 
+                        color="#091324" 
+                        align="center" 
+                        position="0 0 0" 
+                        scale="0.5 0.5 0.5">
+                </a-text>
+            </a-entity>
+        </a-scene>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
+    
+    <script>
+        let arInitialized = false;
+        let arScene = null;
+
+        function startARExperience() {
+            showLoading('Initializing AR Experience...');
+            
+            // Hide landing page and show AR container
+            document.getElementById('landing-page').classList.add('hidden');
+            document.getElementById('ar-container').classList.remove('hidden');
+            
+            // Initialize AR scene
+            if (!arInitialized) {
+                initializeAR();
             } else {
-                alert('MindAR failed to initialize. Check your targets.mind path and MindAR version.');
+                // If already initialized, just start MindAR
+                startMindAR();
             }
         }
-scene.addEventListener('arReady', () => {
-  const mindar = scene.components['mindar-image'];
-  console.log('✅ MindAR is ready:', mindar);
-  mindar.start(); // start AFTER it's fully ready
-});
-        if (scene.hasLoaded) {
-            setTimeout(startMindAR, 300); // Give it a little time to ensure everything is loaded
-        } else {
-            scene.addEventListener('loaded', () => setTimeout(startMindAR, 300), { once: true });
-        }
-    }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const backBtn = document.getElementById('ar-back-btn');
-        if (backBtn) {
-            backBtn.onclick = function() {
-                document.querySelector('.container').classList.remove('hidden');
-                document.getElementById('ar-fullscreen').classList.add('hidden');
-                backBtn.style.display = "none";
-                // Stop MindAR
-                const scene = document.getElementById('ar-fullscreen');
-                if (scene && scene.components && scene.components['mindar-image']) {
-                    scene.components['mindar-image'].stop();
+        function initializeAR() {
+            arScene = document.getElementById('ar-scene');
+            
+            // Wait for scene to be ready
+            if (arScene.hasLoaded) {
+                setupARScene();
+            } else {
+                arScene.addEventListener('loaded', setupARScene, { once: true });
+            }
+        }
+
+        function setupARScene() {
+            console.log('AR Scene loaded, setting up MindAR...');
+            
+            // Setup target events
+            const mosesTarget = document.querySelector('#moses-target');
+            const mosesAudio = document.querySelector('#moses-audio');
+            
+            if (mosesTarget && mosesAudio) {
+                mosesTarget.addEventListener('targetFound', () => {
+                    console.log('Target found!');
+                    mosesAudio.currentTime = 0;
+                    mosesAudio.play().catch(e => console.log('Audio play failed:', e));
+                });
+                
+                mosesTarget.addEventListener('targetLost', () => {
+                    console.log('Target lost!');
+                    mosesAudio.pause();
+                    mosesAudio.currentTime = 0;
+                });
+            }
+            
+            arInitialized = true;
+            startMindAR();
+        }
+
+        function startMindAR() {
+            setTimeout(() => {
+                const mindarComponent = arScene.components['mindar-image'];
+                
+                if (mindarComponent) {
+                    console.log('Starting MindAR...');
+                    mindarComponent.start().then(() => {
+                        hideLoading();
+                        showNotification('AR Experience activated!', 'success');
+                        console.log('MindAR started successfully');
+                    }).catch(error => {
+                        hideLoading();
+                        showNotification('Failed to start AR. Check camera permissions.', 'error');
+                        console.error('MindAR start failed:', error);
+                    });
+                } else {
+                    hideLoading();
+                    showNotification('MindAR component not found', 'error');
+                    console.error('MindAR component not found');
                 }
-            };
+            }, 500); // Give a moment for the scene to fully render
         }
-        // Existing AR audio logic
-        const mosesTarget = document.querySelector('#moses-target');
-        const mosesAudio = document.querySelector('#moses-audio');
-        const container = document.querySelector('.container');
-        if (mosesTarget && mosesAudio && container) {
-            mosesTarget.addEventListener('targetFound', () => {
-                mosesAudio.currentTime = 0;
-                mosesAudio.play();
-                container.classList.add('hidden');
-            });
-            mosesTarget.addEventListener('targetLost', () => {
-                mosesAudio.pause();
-                mosesAudio.currentTime = 0;
-                container.classList.remove('hidden');
-            });
+
+        function stopARExperience() {
+            const mindarComponent = arScene?.components?.['mindar-image'];
+            
+            if (mindarComponent) {
+                mindarComponent.stop();
+            }
+            
+            // Stop any playing audio
+            const audio = document.querySelector('#moses-audio');
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            
+            // Hide AR and show landing page
+            document.getElementById('ar-container').classList.add('hidden');
+            document.getElementById('landing-page').classList.remove('hidden');
         }
-    });
-    </script>
-    <script>
+
         function startAudioGuide() {
             showLoading('Loading Audio Guide...');
             setTimeout(() => {
@@ -300,6 +401,7 @@ scene.addEventListener('arReady', () => {
                 showNotification('Audio Guide activated!', 'success');
             }, 1500);
         }
+
         function showLoading(message) {
             const overlay = document.createElement('div');
             overlay.className = 'loading-overlay';
@@ -311,10 +413,12 @@ scene.addEventListener('arReady', () => {
             `;
             document.body.appendChild(overlay);
         }
+
         function hideLoading() {
             const overlay = document.getElementById('loading');
             if (overlay) overlay.remove();
         }
+
         function showNotification(message, type) {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -325,24 +429,14 @@ scene.addEventListener('arReady', () => {
             document.body.appendChild(notification);
             setTimeout(() => notification.remove(), 4000);
         }
-        // Play audio when image is detected
+
+        // Initialize back button
         document.addEventListener('DOMContentLoaded', function() {
-          const mosesTarget = document.querySelector('#moses-target');
-          const mosesAudio = document.querySelector('#moses-audio');
-          const container = document.querySelector('.container');
-          if (mosesTarget && mosesAudio && container) {
-            mosesTarget.addEventListener('targetFound', () => {
-              mosesAudio.currentTime = 0;
-              mosesAudio.play();
-              container.classList.add('hidden');
-            });
-            mosesTarget.addEventListener('targetLost', () => {
-              mosesAudio.pause();
-              mosesAudio.currentTime = 0;
-              container.classList.remove('hidden');
-            }); // <--- This is correct, but check for any missing or extra parentheses/braces after this block!
-        }
-    });
+            const backBtn = document.getElementById('ar-back-btn');
+            if (backBtn) {
+                backBtn.onclick = stopARExperience;
+            }
+        });
     </script>
 </body>
 </html>
