@@ -165,7 +165,7 @@
         }
     </style>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.3/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.7/dist/mindar-image-aframe.prod.js"></script>
 </head>
 <body>
     <div class="container">
@@ -291,14 +291,18 @@
 
         const scene = document.getElementById('ar-fullscreen');
         function startMindAR() {
-            if (scene.components && scene.components['mindar-image']) {
-                scene.components['mindar-image'].start();
+            const mindar = scene.components && scene.components['mindar-image'];
+            console.log('MindAR component:', mindar);
+            if (mindar && typeof mindar.start === 'function') {
+                mindar.start();
+            } else {
+                alert('MindAR failed to initialize. Check your targets.mind path and MindAR version.');
             }
         }
         if (scene.hasLoaded) {
-            startMindAR();
+            setTimeout(startMindAR, 300); // Give it a little time
         } else {
-            scene.addEventListener('loaded', startMindAR, { once: true });
+            scene.addEventListener('loaded', () => setTimeout(startMindAR, 300), { once: true });
         }
     }
 
@@ -331,8 +335,12 @@
                 mosesAudio.currentTime = 0;
                 container.classList.remove('hidden');
             });
-        }
-    });
-</script>
+        } }
+    });    });
+
+
+
+
+</html></body>    </script></script>
 </body>
 </html>
