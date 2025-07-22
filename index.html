@@ -300,14 +300,16 @@
                 alert('MindAR failed to initialize. Check your targets.mind path and MindAR version.');
             }
         }
-       scene.addEventListener('renderstart', () => {
-    const mindar = scene.components['mindar-image'];
-    if (mindar && typeof mindar.start === 'function') {
-        mindar.start();
-    } else {
-        alert('MindAR failed to initialize. Check your targets.mind path and MindAR version.');
-    }
-}, { once: true });
+scene.addEventListener('arReady', () => {
+  const mindar = scene.components['mindar-image'];
+  console.log('✅ MindAR is ready:', mindar);
+  mindar.start(); // start AFTER it's fully ready
+});
+        if (scene.hasLoaded) {
+            setTimeout(startMindAR, 300); // Give it a little time to ensure everything is loaded
+        } else {
+            scene.addEventListener('loaded', () => setTimeout(startMindAR, 300), { once: true });
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
