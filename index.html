@@ -271,32 +271,43 @@
     <div id="ar-container" class="hidden">
         <button class="ar-overlay" id="ar-back-btn">← Back</button>
         <a-scene id="ar-scene" 
-                 mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.mind; autoStart: false;" 
+                 mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/card.mind; autoStart: false;" 
                  color-space="sRGB" 
                  embedded 
-                 arjs='sourceType: webcam;' 
                  vr-mode-ui="enabled: false" 
-                 device-orientation-permission-ui="enabled: false">
+                 device-orientation-permission-ui="enabled: false"
+                 renderer="colorManagement: true, physicallyCorrectLights">
             <a-assets>
-                <audio id="moses-audio" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.wav" preload="auto"></audio>
+                <audio id="moses-audio" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.wav" preload="auto" crossorigin="anonymous"></audio>
             </a-assets>
-            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+            <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse"></a-camera>
             <a-entity id="moses-target" mindar-image-target="targetIndex: 0">
-                <a-text value="AR Target Detected! Point camera at any flat surface." 
+                <a-text value="AR Target Detected! Museum exhibit coming to life..." 
                         color="#ffffff" 
                         align="center" 
-                        position="0 0 0" 
-                        scale="0.8 0.8 0.8"
-                        background="color: rgba(0,0,0,0.7); opacity: 0.8">
+                        position="0 0.2 0" 
+                        scale="0.6 0.6 0.6"
+                        geometry="primitive: plane; width: 4; height: 1"
+                        material="color: rgba(0,0,0,0.8); opacity: 0.9; transparent: true">
                 </a-text>
-                <a-box position="0 -0.5 0" scale="0.3 0.3 0.3" color="#f59e0b" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"></a-box>
+                <a-box position="0 -0.3 0" 
+                       scale="0.2 0.2 0.2" 
+                       color="#f59e0b" 
+                       material="metalness: 0.3; roughness: 0.4"
+                       animation="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear">
+                </a-box>
+                <a-sphere position="-0.5 0 0" 
+                          scale="0.15 0.15 0.15" 
+                          color="#32CD32"
+                          animation="property: position; to: 0.5 0 0; loop: true; dur: 2000; dir: alternate; easing: easeInOutQuad">
+                </a-sphere>
             </a-entity>
         </a-scene>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
+    <!-- Scripts - Compatible versions -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <script>
         let arInitialized = false;
@@ -306,8 +317,19 @@
             try {
                 showLoading('Requesting camera access...');
                 
+                // Check if MindAR is available
+                if (typeof MINDAR === 'undefined') {
+                    throw new Error('MindAR library not loaded properly');
+                }
+                
                 // First, request camera permission
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
                 stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
                 
                 showLoading('Initializing AR Experience...');
@@ -315,6 +337,9 @@
                 // Hide landing page and show AR container
                 document.getElementById('landing-page').classList.add('hidden');
                 document.getElementById('ar-container').classList.remove('hidden');
+                
+                // Wait a moment for the scene to be visible
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
                 // Initialize AR scene with timeout
                 if (!arInitialized) {
@@ -330,6 +355,8 @@
                     showNotification('Camera access denied. Please allow camera access and try again.', 'error');
                 } else if (error.name === 'NotFoundError') {
                     showNotification('No camera found on your device.', 'error');
+                } else if (error.message.includes('MindAR')) {
+                    showNotification('AR library failed to load. Please refresh the page.', 'error');
                 } else {
                     showNotification('Failed to initialize AR: ' + error.message, 'error');
                 }
@@ -341,10 +368,15 @@
             return new Promise((resolve, reject) => {
                 arScene = document.getElementById('ar-scene');
                 
+                if (!arScene) {
+                    reject(new Error('AR scene not found'));
+                    return;
+                }
+                
                 // Set a timeout to prevent freezing
                 const timeout = setTimeout(() => {
-                    reject(new Error('AR initialization timeout'));
-                }, 10000); // 10 second timeout
+                    reject(new Error('AR initialization timeout - scene failed to load'));
+                }, 15000); // 15 second timeout
                 
                 function setupARScene() {
                     clearTimeout(timeout);
@@ -354,17 +386,21 @@
                     const mosesTarget = document.querySelector('#moses-target');
                     const mosesAudio = document.querySelector('#moses-audio');
                     
-                    if (mosesTarget && mosesAudio) {
+                    if (mosesTarget) {
                         mosesTarget.addEventListener('targetFound', () => {
                             console.log('Target found!');
-                            mosesAudio.currentTime = 0;
-                            mosesAudio.play().catch(e => console.log('Audio play failed:', e));
+                            if (mosesAudio) {
+                                mosesAudio.currentTime = 0;
+                                mosesAudio.play().catch(e => console.log('Audio play failed:', e));
+                            }
                         });
                         
                         mosesTarget.addEventListener('targetLost', () => {
                             console.log('Target lost!');
-                            mosesAudio.pause();
-                            mosesAudio.currentTime = 0;
+                            if (mosesAudio) {
+                                mosesAudio.pause();
+                                mosesAudio.currentTime = 0;
+                            }
                         });
                     }
                     
@@ -372,10 +408,18 @@
                     resolve();
                 }
                 
+                // Check if scene is already loaded
                 if (arScene.hasLoaded) {
-                    setupARScene();
+                    setTimeout(setupARScene, 100);
                 } else {
                     arScene.addEventListener('loaded', setupARScene, { once: true });
+                    
+                    // Also listen for renderstart as fallback
+                    arScene.addEventListener('renderstart', () => {
+                        if (!arInitialized) {
+                            setTimeout(setupARScene, 500);
+                        }
+                    }, { once: true });
                 }
             });
         }
@@ -384,30 +428,36 @@
             return new Promise((resolve, reject) => {
                 // Set a timeout to prevent freezing
                 const timeout = setTimeout(() => {
-                    reject(new Error('MindAR start timeout'));
-                }, 8000); // 8 second timeout
+                    reject(new Error('MindAR start timeout - failed to start camera'));
+                }, 12000); // 12 second timeout
                 
                 setTimeout(async () => {
                     try {
                         const mindarComponent = arScene.components['mindar-image'];
                         
-                        if (mindarComponent) {
-                            console.log('Starting MindAR...');
-                            await mindarComponent.start();
+                        if (!mindarComponent) {
                             clearTimeout(timeout);
-                            hideLoading();
-                            showNotification('AR Experience activated!', 'success');
-                            console.log('MindAR started successfully');
-                            resolve();
-                        } else {
-                            clearTimeout(timeout);
-                            reject(new Error('MindAR component not found'));
+                            reject(new Error('MindAR component not found on scene'));
+                            return;
                         }
+                        
+                        console.log('Starting MindAR...');
+                        
+                        // Start MindAR
+                        await mindarComponent.start();
+                        
+                        clearTimeout(timeout);
+                        hideLoading();
+                        showNotification('AR Experience activated! Point your camera at a flat surface.', 'success');
+                        console.log('MindAR started successfully');
+                        resolve();
+                        
                     } catch (error) {
                         clearTimeout(timeout);
-                        reject(error);
+                        console.error('MindAR start error:', error);
+                        reject(new Error('MindAR failed to start: ' + error.message));
                     }
-                }, 500);
+                }, 800);
             });
         }
 
