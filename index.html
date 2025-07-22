@@ -203,7 +203,7 @@
             </div>
         </div>
     </div>
-    <a-scene id="ar-fullscreen" class="hidden" mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: true;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene id="ar-fullscreen" class="hidden" mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: false;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-assets>
         <audio id="moses-audio" src="./assets/audio/exhibit1.mp3"></audio>
       </a-assets>
@@ -288,16 +288,33 @@
             document.querySelector('.container').classList.add('hidden');
             document.getElementById('ar-fullscreen').classList.remove('hidden');
             document.getElementById('ar-back-btn').style.display = "block";
-            }
+
+            // Start MindAR if not already running
+            const scene = document.getElementById('ar-fullscreen');
+    if (scene && scene.components && scene.components['mindar-image']) {
+        // Already initialized
+        scene.components['mindar-image'].start();
+    } else {
+        // Wait for A-Frame to init, then start MindAR
+        scene.addEventListener('loaded', function onLoaded() {
+            scene.removeEventListener('loaded', onLoaded);
+            scene.components['mindar-image'].start();
+        });
+    }
+}
         document.addEventListener('DOMContentLoaded', function() {
             const backBTN = document.getElementById('ar-back-btn');
             if (backBtn) {
                 backBtn.onclick = function() {
-                    document.querySelector('.container').classList.remove('hidden');
-                    document.getElementById('ar-fullscreen').classList.add('hidden');
-                    backBtn.style.display = "none";
-                        };
+              document.querySelector('.container').classList.remove('hidden');
+    document.getElementById('ar-fullscreen').classList.add('hidden');
+    backBtn.style.display = "none";
+    // Stop MindAR
+    const scene = document.getElementById('ar-fullscreen');
+    if (scene && scene.components && scene.components['mindar-image']) {
+        scene.components['mindar-image'].stop();
     }
+};
                 // Existing AR audio logic
                  const mosesTarget = document.querySelector('#moses-target');
     const mosesAudio = document.querySelector('#moses-audio');
