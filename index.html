@@ -211,26 +211,26 @@
       <a-entity id="moses-target" mindar-image-target="targetIndex: 0">
         <a-text value="Mosè domanda al Faraone il permesso di lasciare l’Egitto con gli ebrei" color="#091324" align="center" position="0 0 0" scale="0.5 0.5 0.5"></a-text>
       </a-entity>
-        <!-- Back Button for AR Experience -->
-        <div id="ar-back-btn" style="
-            position: fixed;
-            top: 24px;
-            left: 24px;
-            z-index: 12000;
-            background: rgba(0,0,0,0,7);
-            color: #fff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 32px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            outline: none;
-            display: none;
-            ">
-            ← Back
-        </div>
     </a-scene>
+    <!-- Back Button for AR Experience (moved outside a-scene) -->
+    <div id="ar-back-btn" style="
+        position: fixed;
+        top: 24px;
+        left: 24px;
+        z-index: 12000;
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 0.75rem 1.5rem;
+        border-radius: 32px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        border: none;
+        outline: none;
+        display: none;
+        ">
+        ← Back
+    </div>
     <script>
         function startAudioGuide() {
             showLoading('Loading Audio Guide...');
@@ -284,54 +284,54 @@
         });
     </script>
     <script>
-        function startARExperience() {
-            document.querySelector('.container').classList.add('hidden');
-            document.getElementById('ar-fullscreen').classList.remove('hidden');
-            document.getElementById('ar-back-btn').style.display = "block";
+    function startARExperience() {
+        document.querySelector('.container').classList.add('hidden');
+        document.getElementById('ar-fullscreen').classList.remove('hidden');
+        document.getElementById('ar-back-btn').style.display = "block";
 
-            // Start MindAR if not already running
-            const scene = document.getElementById('ar-fullscreen');
-    if (scene && scene.components && scene.components['mindar-image']) {
-        // Already initialized
-        scene.components['mindar-image'].start();
-    } else {
-        // Wait for A-Frame to init, then start MindAR
-        scene.addEventListener('loaded', function onLoaded() {
-            scene.removeEventListener('loaded', onLoaded);
+        // Start MindAR if not already running
+        const scene = document.getElementById('ar-fullscreen');
+        if (scene && scene.components && scene.components['mindar-image']) {
             scene.components['mindar-image'].start();
-        });
+        } else {
+            scene.addEventListener('loaded', function onLoaded() {
+                scene.removeEventListener('loaded', onLoaded);
+                scene.components['mindar-image'].start();
+            });
+        }
     }
-}
-        document.addEventListener('DOMContentLoaded', function() {
-            const backBTN = document.getElementById('ar-back-btn');
-            if (backBtn) {
-                backBtn.onclick = function() {
-              document.querySelector('.container').classList.remove('hidden');
-    document.getElementById('ar-fullscreen').classList.add('hidden');
-    backBtn.style.display = "none";
-    // Stop MindAR
-    const scene = document.getElementById('ar-fullscreen');
-    if (scene && scene.components && scene.components['mindar-image']) {
-        scene.components['mindar-image'].stop();
-    }
-};
-                // Existing AR audio logic
-                 const mosesTarget = document.querySelector('#moses-target');
-    const mosesAudio = document.querySelector('#moses-audio');
-    const container = document.querySelector('.container');
-    if (mosesTarget && mosesAudio && container) {
-        mosesTarget.addEventListener('targetFound', () => {
-            mosesAudio.currentTime = 0;
-            mosesAudio.play();
-            container.classList.add('hidden');
-        });
-        mosesTarget.addEventListener('targetLost', () => {
-            mosesAudio.pause();
-            mosesAudio.currentTime = 0;
-            container.classList.remove('hidden');
-        });
-    }
-});
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const backBtn = document.getElementById('ar-back-btn');
+        if (backBtn) {
+            backBtn.onclick = function() {
+                document.querySelector('.container').classList.remove('hidden');
+                document.getElementById('ar-fullscreen').classList.add('hidden');
+                backBtn.style.display = "none";
+                // Stop MindAR
+                const scene = document.getElementById('ar-fullscreen');
+                if (scene && scene.components && scene.components['mindar-image']) {
+                    scene.components['mindar-image'].stop();
+                }
+            };
+        }
+        // Existing AR audio logic
+        const mosesTarget = document.querySelector('#moses-target');
+        const mosesAudio = document.querySelector('#moses-audio');
+        const container = document.querySelector('.container');
+        if (mosesTarget && mosesAudio && container) {
+            mosesTarget.addEventListener('targetFound', () => {
+                mosesAudio.currentTime = 0;
+                mosesAudio.play();
+                container.classList.add('hidden');
+            });
+            mosesTarget.addEventListener('targetLost', () => {
+                mosesAudio.pause();
+                mosesAudio.currentTime = 0;
+                container.classList.remove('hidden');
+            });
+        }
+    });
 </script>
 </body>
 </html>
