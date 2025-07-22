@@ -6,6 +6,9 @@
     <title>Museum AR Experience</title>
     <meta name="description" content="Experience art like never before with AR technology">
     
+    <!-- Simple favicon to prevent 404 errors -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+    
     <style>
         * {
             margin: 0;
@@ -308,24 +311,112 @@
         </a-scene>
     </div>
 
-    <!-- Scripts - Compatible versions -->
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js" 
-            onerror="console.error('Failed to load MindAR script'); window.mindARError = true;"></script>
+    <!-- Scripts - Using the most reliable sources -->
+    <script crossorigin="anonymous" 
+            src="https://unpkg.com/aframe@1.3.0/dist/aframe-master.min.js"
+            onload="console.log('A-Frame loaded from unpkg'); window.aframeLoaded = true;"
+            onerror="console.warn('unpkg A-Frame failed, trying jsDelivr...'); loadAFrameFallback();">
+    </script>
     
     <script>
-        // Check if scripts loaded properly
+        // Fallback A-Frame loader
+        function loadAFrameFallback() {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/aframe@1.3.0/dist/aframe-master.min.js';
+            script.crossOrigin = 'anonymous';
+            script.onload = function() {
+                console.log('A-Frame loaded from jsDelivr fallback');
+                window.aframeLoaded = true;
+                loadMindAR();
+            };
+            script.onerror = function() {
+                console.error('All A-Frame CDNs failed');
+                window.aframeError = true;
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Load MindAR after A-Frame is ready
+        function loadMindAR() {
+            if (typeof AFRAME === 'undefined') {
+                console.log('Waiting for A-Frame to be ready...');
+                setTimeout(loadMindAR, 100);
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js';
+            script.crossOrigin = 'anonymous';
+            script.onload = function() {
+                console.log('MindAR loaded successfully');
+                window.mindARLoaded = true;
+            };
+            script.onerror = function() {
+                console.error('MindAR failed to load');
+                window.mindARError = true;
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Auto-load MindAR when A-Frame is ready
         window.addEventListener('load', function() {
-            setTimeout(function() {
-                if (typeof AFRAME === 'undefined') {
-                    console.error('A-Frame failed to load');
-                    document.body.innerHTML += '<div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: red; color: white; padding: 20px; border-radius: 10px; z-index: 10000;">Error: A-Frame library failed to load. Please check your internet connection and refresh the page.</div>';
+            if (window.aframeLoaded && typeof AFRAME !== 'undefined') {
+                loadMindAR();
+            } else {
+                // Try again in case A-Frame loaded but the flag wasn't set
+                setTimeout(function() {
+                    if (typeof AFRAME !== 'undefined' && !window.mindARLoaded) {
+                        loadMindAR();
+                    }
+                }, 1000);
+            }
+        });
+    </script>
+    
+    <script>
+        // More robust script loading detection
+        let scriptsLoaded = {
+            aframe: false,
+            mindar: false
+        };
+        
+        // Check if scripts loaded properly with multiple attempts
+        function checkScriptLoading() {
+            console.log('Checking script loading status...');
+            
+            if (typeof AFRAME !== 'undefined' && !window.aframeError) {
+                scriptsLoaded.aframe = true;
+                console.log('✅ A-Frame detected and ready');
+            }
+            
+            if (typeof MINDAR !== 'undefined' && !window.mindARError) {
+                scriptsLoaded.mindar = true;
+                console.log('✅ MindAR detected and ready');
+            }
+            
+            if (!scriptsLoaded.aframe) {
+                console.error('❌ A-Frame failed to load - this will cause AR initialization to fail');
+                if (!document.getElementById('aframe-error')) {
+                    document.body.innerHTML += '<div id="aframe-error" style="position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 20px; border-radius: 10px; z-index: 10000; max-width: 90%; text-align: center;"><h3>❌ A-Frame Library Error</h3><p>The A-Frame 3D/AR library failed to load. This is required for the AR experience.</p><p><strong>Solutions:</strong></p><ul style="text-align: left; margin: 10px 0;"><li>Check your internet connection</li><li>Refresh the page</li><li>Try a different browser</li><li>Disable ad blockers temporarily</li></ul><button onclick="location.reload()" style="background: white; color: #ef4444; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">🔄 Reload Page</button></div>';
                 }
-                if (typeof MINDAR === 'undefined' || window.mindARError) {
-                    console.error('MindAR failed to load');
-                    document.body.innerHTML += '<div style="position: fixed; top: 60%; left: 50%; transform: translate(-50%, -50%); background: red; color: white; padding: 20px; border-radius: 10px; z-index: 10000;">Error: MindAR library failed to load. Please check your internet connection and refresh the page.</div>';
+            }
+            
+            if (!scriptsLoaded.mindar && scriptsLoaded.aframe) {
+                console.warn('⚠️ MindAR failed to load - trying to reload...');
+                if (!document.getElementById('mindar-error')) {
+                    document.body.innerHTML += '<div id="mindar-error" style="position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%); background: #f59e0b; color: white; padding: 20px; border-radius: 10px; z-index: 10000; max-width: 90%; text-align: center;"><h3>⚠️ MindAR Library Error</h3><p>The MindAR library failed to load. AR functionality will be limited.</p><p><strong>You can still use Demo Mode!</strong></p><button onclick="this.parentElement.remove()" style="background: white; color: #f59e0b; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Close</button></div>';
                 }
-            }, 2000);
+            }
+            
+            if (scriptsLoaded.aframe && scriptsLoaded.mindar) {
+                console.log('🎉 All AR libraries loaded successfully!');
+            }
+        }
+        
+        // Check scripts multiple times to catch any loading issues
+        window.addEventListener('load', function() {
+            setTimeout(checkScriptLoading, 2000);
+            setTimeout(checkScriptLoading, 5000); // Check again after 5 seconds
         });
         
         let arInitialized = false;
@@ -340,23 +431,31 @@
 
         async function startARExperience() {
             try {
+                debugLog('Starting AR Experience...');
                 showLoading('Initializing AR Experience...');
+                
+                // Check if required libraries are loaded
+                if (typeof AFRAME === 'undefined') {
+                    throw new Error('A-Frame library not loaded. Please refresh the page or check your internet connection.');
+                }
+                
+                if (typeof MINDAR === 'undefined') {
+                    throw new Error('MindAR library not loaded. Please refresh the page or check your internet connection.');
+                }
                 
                 // Check browser compatibility
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('Your browser does not support camera access. Please use a modern browser.');
+                    throw new Error('Your browser does not support camera access. Please use a modern browser like Chrome, Firefox, or Safari.');
                 }
                 
-                // Check if MindAR is available
-                if (typeof MINDAR === 'undefined') {
-                    throw new Error('MindAR library not loaded properly');
-                }
+                debugLog('Libraries loaded successfully, checking camera...');
                 
                 // Check for camera availability (without requesting permission yet)
                 let hasCamera = false;
                 try {
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     hasCamera = devices.some(device => device.kind === 'videoinput');
+                    debugLog(`Camera check: ${hasCamera ? 'Camera found' : 'No camera found'}`);
                 } catch (e) {
                     console.warn('Could not enumerate devices:', e);
                     // Continue anyway - some browsers might not support enumerateDevices
@@ -364,7 +463,7 @@
                 }
                 
                 if (!hasCamera) {
-                    throw new Error('No camera found on your device. AR requires a camera to function.');
+                    throw new Error('No camera found on your device. AR requires a camera to function. Try using Demo Mode instead.');
                 }
                 
                 // Hide landing page and show AR container first
@@ -372,6 +471,7 @@
                 document.getElementById('ar-container').classList.remove('hidden');
                 
                 showLoading('Setting up AR scene...');
+                debugLog('Showing AR container, initializing scene...');
                 
                 // Wait a moment for the scene to be visible
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -387,6 +487,7 @@
                 
             } catch (error) {
                 console.error('AR initialization failed:', error);
+                debugLog(`AR Error: ${error.message}`);
                 hideLoading();
                 
                 let errorMessage = 'Failed to initialize AR: ' + error.message;
@@ -394,8 +495,8 @@
                     errorMessage = 'Camera access denied. Please allow camera access and try again.';
                 } else if (error.name === 'NotFoundError') {
                     errorMessage = 'No camera found on your device.';
-                } else if (error.message.includes('MindAR')) {
-                    errorMessage = 'AR library failed to load. Please refresh the page.';
+                } else if (error.message.includes('A-Frame') || error.message.includes('MindAR')) {
+                    errorMessage = error.message + ' Try refreshing the page.';
                 } else if (error.message.includes('camera')) {
                     errorMessage = error.message;
                 }
