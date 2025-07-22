@@ -42,18 +42,48 @@
                 return;
             }
             
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js';
-            script.crossOrigin = 'anonymous';
-            script.onload = function() {
-                console.log('MindAR loaded successfully');
-                window.mindARLoaded = true;
-            };
-            script.onerror = function() {
-                console.error('MindAR failed to load');
-                window.mindARError = true;
-            };
-            document.head.appendChild(script);
+            console.log('Loading MindAR...');
+            
+            // Try multiple CDN sources for better mobile compatibility
+            const mindARSources = [
+                'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js',
+                'https://unpkg.com/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js',
+                'https://cdn.skypack.dev/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js'
+            ];
+            
+            let sourceIndex = 0;
+            
+            function tryLoadMindAR() {
+                if (sourceIndex >= mindARSources.length) {
+                    console.error('All MindAR CDNs failed');
+                    window.mindARError = true;
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = mindARSources[sourceIndex];
+                script.crossOrigin = 'anonymous';
+                script.onload = function() {
+                    console.log(`MindAR loaded successfully from source ${sourceIndex + 1}`);
+                    window.mindARLoaded = true;
+                    
+                    // Wait a bit more for MindAR to fully register
+                    setTimeout(() => {
+                        if (typeof MINDAR !== 'undefined') {
+                            console.log('MindAR fully registered and ready');
+                        }
+                    }, 500);
+                };
+                script.onerror = function() {
+                    console.warn(`MindAR source ${sourceIndex + 1} failed, trying next...`);
+                    sourceIndex++;
+                    document.head.removeChild(script);
+                    tryLoadMindAR();
+                };
+                document.head.appendChild(script);
+            }
+            
+            tryLoadMindAR();
         }
         
         // Auto-load MindAR when A-Frame is ready
@@ -395,17 +425,23 @@
                 console.log('✅ MindAR detected and ready');
             }
             
+            // Check for mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                console.log('📱 Mobile device detected - using extended timeouts');
+            }
+            
             if (!scriptsLoaded.aframe) {
                 console.error('❌ A-Frame failed to load or is not ready');
                 if (!document.getElementById('aframe-error')) {
-                    document.body.innerHTML += '<div id="aframe-error" style="position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 20px; border-radius: 10px; z-index: 10000; max-width: 90%; text-align: center;"><h3>❌ A-Frame Library Error</h3><p>The A-Frame 3D/AR library failed to load properly. This is required for the AR experience.</p><p><strong>Solutions:</strong></p><ul style="text-align: left; margin: 10px 0;"><li>Check your internet connection</li><li>Refresh the page</li><li>Try a different browser</li><li>Disable ad blockers temporarily</li></ul><button onclick="location.reload()" style="background: white; color: #ef4444; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">🔄 Reload Page</button></div>';
+                    document.body.innerHTML += '<div id="aframe-error" style="position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 20px; border-radius: 10px; z-index: 10000; max-width: 90%; text-align: center;"><h3>❌ A-Frame Library Error</h3><p>The A-Frame 3D/AR library failed to load properly. This is required for the AR experience.</p><p><strong>Solutions:</strong></p><ul style="text-align: left; margin: 10px 0;"><li>Check your internet connection</li><li>Refresh the page</li><li>Try a different browser</li><li>Disable ad blockers temporarily</li>' + (isMobile ? '<li>On mobile, try switching to WiFi</li>' : '') + '</ul><button onclick="location.reload()" style="background: white; color: #ef4444; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">🔄 Reload Page</button></div>';
                 }
             }
             
             if (!scriptsLoaded.mindar && scriptsLoaded.aframe) {
                 console.warn('⚠️ MindAR failed to load - AR functionality will be limited');
                 if (!document.getElementById('mindar-error')) {
-                    document.body.innerHTML += '<div id="mindar-error" style="position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%); background: #f59e0b; color: white; padding: 20px; border-radius: 10px; z-index: 10000; max-width: 90%; text-align: center;"><h3>⚠️ MindAR Library Error</h3><p>The MindAR library failed to load. AR functionality will be limited.</p><p><strong>You can still use Demo Mode!</strong></p><button onclick="this.parentElement.remove()" style="background: white; color: #f59e0b; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Close</button></div>';
+                    document.body.innerHTML += '<div id="mindar-error" style="position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%); background: #f59e0b; color: white; padding: 20px; border-radius: 10px; z-index: 10000; max-width: 90%; text-align: center;"><h3>⚠️ MindAR Library Error</h3><p>The MindAR library failed to load. AR functionality will be limited.</p><p><strong>You can still use Demo Mode!</strong></p>' + (isMobile ? '<p><em>Mobile devices sometimes need a few attempts to load AR libraries.</em></p>' : '') + '<button onclick="this.parentElement.remove()" style="background: white; color: #f59e0b; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Close</button></div>';
                 }
             }
             
@@ -437,6 +473,9 @@
                 
                 // Wait for A-Frame to be fully ready
                 await waitForAFrame();
+                
+                // Wait for MindAR to be ready
+                await waitForMindAR();
                 
                 // Check if required libraries are loaded
                 if (typeof AFRAME === 'undefined' || !AFRAME.registerComponent) {
@@ -477,8 +516,10 @@
                 showLoading('Setting up AR scene...');
                 debugLog('Showing AR container, initializing scene...');
                 
-                // Wait a moment for the scene to be visible
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Wait longer for mobile devices
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const waitTime = isMobile ? 1500 : 500;
+                await new Promise(resolve => setTimeout(resolve, waitTime));
                 
                 // Initialize AR scene first
                 if (!arInitialized) {
@@ -615,7 +656,7 @@
                 // Set a timeout to prevent freezing
                 const timeout = setTimeout(() => {
                     reject(new Error('MindAR start timeout - failed to start camera'));
-                }, 15000); // 15 second timeout
+                }, 20000); // Increased timeout for mobile devices
                 
                 try {
                     // First, request camera permission
@@ -631,18 +672,47 @@
                     
                     showLoading('Starting AR...');
                     
-                    // Wait a bit more for the scene to be fully ready
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Wait for MindAR to be fully ready (especially important on mobile)
+                    await waitForMindAR();
                     
-                    const mindarComponent = arScene.components['mindar-image'];
+                    // Wait a bit more for the scene to be fully ready
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Try multiple ways to get the MindAR component
+                    let mindarComponent = null;
+                    
+                    // Method 1: Direct component access
+                    if (arScene.components && arScene.components['mindar-image']) {
+                        mindarComponent = arScene.components['mindar-image'];
+                        console.log('MindAR component found via direct access');
+                    }
+                    
+                    // Method 2: Query the component
+                    if (!mindarComponent) {
+                        const mindarEl = document.querySelector('[mindar-image]');
+                        if (mindarEl && mindarEl.components && mindarEl.components['mindar-image']) {
+                            mindarComponent = mindarEl.components['mindar-image'];
+                            console.log('MindAR component found via query selector');
+                        }
+                    }
+                    
+                    // Method 3: Wait for component to be registered
+                    if (!mindarComponent) {
+                        console.log('Waiting for MindAR component to be registered...');
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        if (arScene.components && arScene.components['mindar-image']) {
+                            mindarComponent = arScene.components['mindar-image'];
+                            console.log('MindAR component found after waiting');
+                        }
+                    }
                     
                     if (!mindarComponent) {
                         clearTimeout(timeout);
-                        reject(new Error('MindAR component not found on scene. Scene may not be fully loaded.'));
+                        reject(new Error('MindAR component not found on scene. This may be due to slow loading on mobile devices. Please try refreshing the page.'));
                         return;
                     }
                     
-                    console.log('Starting MindAR...');
+                    console.log('Starting MindAR component...');
                     
                     // Start MindAR
                     await mindarComponent.start();
@@ -664,6 +734,31 @@
                         reject(new Error('MindAR failed to start: ' + error.message));
                     }
                 }
+            });
+        }
+
+        // Wait for MindAR to be fully ready
+        function waitForMindAR() {
+            return new Promise((resolve, reject) => {
+                if (typeof MINDAR !== 'undefined' && window.mindARLoaded) {
+                    resolve();
+                    return;
+                }
+                
+                let attempts = 0;
+                const maxAttempts = 60; // 6 seconds max (longer for mobile)
+                
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    if (typeof MINDAR !== 'undefined' && window.mindARLoaded) {
+                        clearInterval(checkInterval);
+                        console.log('MindAR is fully ready');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkInterval);
+                        reject(new Error('MindAR failed to load within timeout period'));
+                    }
+                }, 100);
             });
         }
 
