@@ -289,15 +289,16 @@
         document.getElementById('ar-fullscreen').classList.remove('hidden');
         document.getElementById('ar-back-btn').style.display = "block";
 
-        // Start MindAR if not already running
         const scene = document.getElementById('ar-fullscreen');
-        if (scene && scene.components && scene.components['mindar-image']) {
-            scene.components['mindar-image'].start();
-        } else {
-            scene.addEventListener('loaded', function onLoaded() {
-                scene.removeEventListener('loaded', onLoaded);
+        function startMindAR() {
+            if (scene.components && scene.components['mindar-image']) {
                 scene.components['mindar-image'].start();
-            });
+            }
+        }
+        if (scene.hasLoaded) {
+            startMindAR();
+        } else {
+            scene.addEventListener('loaded', startMindAR, { once: true });
         }
     }
 
