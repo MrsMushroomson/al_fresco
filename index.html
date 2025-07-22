@@ -300,11 +300,14 @@
                 alert('MindAR failed to initialize. Check your targets.mind path and MindAR version.');
             }
         }
-        if (scene.hasLoaded) {
-            setTimeout(startMindAR, 300); // Give it a little time
-        } else {
-            scene.addEventListener('loaded', () => setTimeout(startMindAR, 300), { once: true });
-        }
+       scene.addEventListener('renderstart', () => {
+    const mindar = scene.components['mindar-image'];
+    if (mindar && typeof mindar.start === 'function') {
+        mindar.start();
+    } else {
+        alert('MindAR failed to initialize. Check your targets.mind path and MindAR version.');
+    }
+}, { once: true });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
