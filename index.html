@@ -180,6 +180,9 @@
                 <button class="btn btn-secondary" onclick="startAudioGuide()">
                     🎧 Launch Audio Guide
                 </button>
+            <button class="btn btn-primary" onclick="startARExperience()">
+                 🕶️ Start AR Experience
+            </button>
             </div>
         </div>
         <div class="features">
@@ -200,14 +203,33 @@
             </div>
         </div>
     </div>
-    <a-scene id="ar-fullscreen" mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: true;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene id="ar-fullscreen" class="hidden" mindar-image="imageTargetSrc: ./assets/models/targets.mind; autoStart: true;" color-space="sRGB" embedded arjs='sourceType: webcam;' vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-assets>
         <audio id="moses-audio" src="./assets/audio/exhibit1.mp3"></audio>
       </a-assets>
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
       <a-entity id="moses-target" mindar-image-target="targetIndex: 0">
-        <a-text value="Explore the Moses frescoes" color="#FFD700" align="center" position="0 0 0" scale="0.5 0.5 0.5"></a-text>
+        <a-text value="Mosè domanda al Faraone il permesso di lasciare l’Egitto con gli ebrei" color="#091324" align="center" position="0 0 0" scale="0.5 0.5 0.5"></a-text>
       </a-entity>
+        <!-- Back Button for AR Experience -->
+        <div id="ar-back-btn" style="
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            z-index: 12000;
+            background: rgba(0,0,0,0,7);
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 32px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            display: none;
+            ">
+            ← Back
+        </div>
     </a-scene>
     <script>
         function startAudioGuide() {
@@ -261,5 +283,38 @@
           }
         });
     </script>
+    <script>
+        function startARExperience() {
+            document.querySelector('.container').classList.add('hidden');
+            document.getElementById('ar-fullscreen').classList.remove('hidden');
+            document.getElementById('ar-back-btn').style.display = "block";
+            }
+        document.addEventListener('DOMContentLoaded', function() {
+            const backBTN = document.getElementById('ar-back-btn');
+            if (backBtn) {
+                backBtn.onclick = function() {
+                    document.querySelector('.container').classList.remove('hidden');
+                    document.getElementById('ar-fullscreen').classList.add('hidden');
+                    backBtn.style.display = "none";
+                        };
+    }
+                // Existing AR audio logic
+                 const mosesTarget = document.querySelector('#moses-target');
+    const mosesAudio = document.querySelector('#moses-audio');
+    const container = document.querySelector('.container');
+    if (mosesTarget && mosesAudio && container) {
+        mosesTarget.addEventListener('targetFound', () => {
+            mosesAudio.currentTime = 0;
+            mosesAudio.play();
+            container.classList.add('hidden');
+        });
+        mosesTarget.addEventListener('targetLost', () => {
+            mosesAudio.pause();
+            mosesAudio.currentTime = 0;
+            container.classList.remove('hidden');
+        });
+    }
+});
+</script>
 </body>
 </html>
