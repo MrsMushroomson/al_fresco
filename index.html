@@ -280,9 +280,9 @@
               mosesAudio.pause();
               mosesAudio.currentTime = 0;
               container.classList.remove('hidden');
-            });
-          }
-        });
+            }); // <--- This is correct, but check for any missing or extra parentheses/braces after this block!
+        }
+    });
     </script>
     <script>
     function startARExperience() {
@@ -336,12 +336,8 @@
                 mosesAudio.currentTime = 0;
                 container.classList.remove('hidden');
             });
-        } }
-    });    });
-
-
-
-
-</html></body>    </script></script>
+        }
+    });
+    </script>
 </body>
 </html>
