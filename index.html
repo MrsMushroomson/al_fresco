@@ -232,59 +232,7 @@
         ">
         ← Back
     </div>
-    <script>
-        function startAudioGuide() {
-            showLoading('Loading Audio Guide...');
-            setTimeout(() => {
-                hideLoading();
-                showNotification('Audio Guide activated!', 'success');
-            }, 1500);
-        }
-        function showLoading(message) {
-            const overlay = document.createElement('div');
-            overlay.className = 'loading-overlay';
-            overlay.id = 'loading';
-            overlay.innerHTML = `
-                <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
-                <div>${message}</div>
-                <div style="margin-top: 1rem; opacity: 0.7;">Please wait...</div>
-            `;
-            document.body.appendChild(overlay);
-        }
-        function hideLoading() {
-            const overlay = document.getElementById('loading');
-            if (overlay) overlay.remove();
-        }
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <span style="margin-right: 0.5rem;">${type === 'success' ? '✅' : '❌'}</span>
-                ${message}
-            `;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 4000);
-        }
-        // Play audio when image is detected
-        document.addEventListener('DOMContentLoaded', function() {
-          const mosesTarget = document.querySelector('#moses-target');
-          const mosesAudio = document.querySelector('#moses-audio');
-          const container = document.querySelector('.container');
-          if (mosesTarget && mosesAudio && container) {
-            mosesTarget.addEventListener('targetFound', () => {
-              mosesAudio.currentTime = 0;
-              mosesAudio.play();
-              container.classList.add('hidden');
-            });
-            mosesTarget.addEventListener('targetLost', () => {
-              mosesAudio.pause();
-              mosesAudio.currentTime = 0;
-              container.classList.remove('hidden');
-            }); // <--- This is correct, but check for any missing or extra parentheses/braces after this block!
-        }
-    });
-    </script>
-    <script>
+        <script>
     function startARExperience() {
         document.querySelector('.container').classList.add('hidden');
         document.getElementById('ar-fullscreen').classList.remove('hidden');
@@ -341,6 +289,58 @@ scene.addEventListener('arReady', () => {
                 mosesAudio.currentTime = 0;
                 container.classList.remove('hidden');
             });
+        }
+    });
+    </script>
+    <script>
+        function startAudioGuide() {
+            showLoading('Loading Audio Guide...');
+            setTimeout(() => {
+                hideLoading();
+                showNotification('Audio Guide activated!', 'success');
+            }, 1500);
+        }
+        function showLoading(message) {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.id = 'loading';
+            overlay.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
+                <div>${message}</div>
+                <div style="margin-top: 1rem; opacity: 0.7;">Please wait...</div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        function hideLoading() {
+            const overlay = document.getElementById('loading');
+            if (overlay) overlay.remove();
+        }
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <span style="margin-right: 0.5rem;">${type === 'success' ? '✅' : '❌'}</span>
+                ${message}
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 4000);
+        }
+        // Play audio when image is detected
+        document.addEventListener('DOMContentLoaded', function() {
+          const mosesTarget = document.querySelector('#moses-target');
+          const mosesAudio = document.querySelector('#moses-audio');
+          const container = document.querySelector('.container');
+          if (mosesTarget && mosesAudio && container) {
+            mosesTarget.addEventListener('targetFound', () => {
+              mosesAudio.currentTime = 0;
+              mosesAudio.play();
+              container.classList.add('hidden');
+            });
+            mosesTarget.addEventListener('targetLost', () => {
+              mosesAudio.pause();
+              mosesAudio.currentTime = 0;
+              container.classList.remove('hidden');
+            }); // <--- This is correct, but check for any missing or extra parentheses/braces after this block!
         }
     });
     </script>
