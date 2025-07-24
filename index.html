@@ -690,14 +690,14 @@
             if (!scriptsLoaded.aframe) {
                 console.error('❌ A-Frame failed to load or is not ready');
                 if (!document.getElementById('aframe-error')) {
-                    document.body.innerHTML += '<div id="aframe-error" style="position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 20px; border-radius: 10px; z-index: 10000; max-width: 90%; text-align: center;"><h3>❌ A-Frame Library Error</h3><p>The A-Frame 3D/AR library failed to load properly. This is required for the AR experience.</p><p><strong>Solutions:</strong></p><ul style="text-align: left; margin: 10px 0;"><li>Check your internet connection</li><li>Refresh the page</li><li>Try a different browser</li><li>Disable ad blockers temporarily</li>' + (isMobile ? '<li>On mobile, try switching to WiFi</li>' : '') + '</ul><button onclick="location.reload()" style="background: white; color: #ef4444; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">🔄 Reload Page</button></div>';
+                    document.body.innerHTML += '<div id="aframe-error" style="position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 20px; [...]
                 }
             }
             
             if (!scriptsLoaded.mindar && scriptsLoaded.aframe) {
                 console.warn('⚠️ MindAR failed to load - AR functionality will be limited');
                 if (!document.getElementById('mindar-error')) {
-                    document.body.innerHTML += '<div id="mindar-error" style="position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%); background: #f59e0b; color: white; padding: 20px; border-radius: 10px; z-index: 10000; max-width: 90%; text-align: center;"><h3>⚠️ MindAR Library Error</h3><p>The MindAR library failed to load. AR functionality will be limited.</p><p><strong>You can still use Demo Mode!</strong></p>' + (isMobile ? '<p><em>Mobile devices sometimes need a few attempts to load AR libraries.</em></p>' : '') + '<button onclick="this.parentElement.remove()" style="background: white; color: #f59e0b; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Close</button></div>';
+                    document.body.innerHTML += '<div id="mindar-error" style="position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%); background: #f59e0b; color: white; padding: 20px; [...]
                 }
             }
             
@@ -934,44 +934,19 @@
                     // Wait a bit more for the scene to be fully ready
                     await new Promise(resolve => setTimeout(resolve, 1500));
                     
-                    // Try multiple ways to get the MindAR component
-                    let mindarComponent = null;
+                    // The correct way to get the MindAR system
+                    const mindarSystem = arScene.systems['mindar-image'];
                     
-                    // Method 1: Direct component access
-                    if (arScene.components && arScene.components['mindar-image']) {
-                        mindarComponent = arScene.components['mindar-image'];
-                        console.log('MindAR component found via direct access');
-                    }
-                    
-                    // Method 2: Query the component
-                    if (!mindarComponent) {
-                        const mindarEl = document.querySelector('[mindar-image]');
-                        if (mindarEl && mindarEl.components && mindarEl.components['mindar-image']) {
-                            mindarComponent = mindarEl.components['mindar-image'];
-                            console.log('MindAR component found via query selector');
-                        }
-                    }
-                    
-                    // Method 3: Wait for component to be registered
-                    if (!mindarComponent) {
-                        console.log('Waiting for MindAR component to be registered...');
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        if (arScene.components && arScene.components['mindar-image']) {
-                            mindarComponent = arScene.components['mindar-image'];
-                            console.log('MindAR component found after waiting');
-                        }
-                    }
-                    
-                    if (!mindarComponent) {
+                    if (!mindarSystem) {
                         clearTimeout(timeout);
-                        reject(new Error('MindAR component not found on scene. This may be due to slow loading on mobile devices. Please try refreshing the page.'));
+                        reject(new Error('MindAR system not found on scene. This may be due to slow loading on mobile devices. Please try refreshing the page.'));
                         return;
                     }
                     
-                    console.log('Starting MindAR component...');
+                    console.log('Starting MindAR system...');
                     
                     // Start MindAR
-                    await mindarComponent.start();
+                    await mindarSystem.start();
                     
                     clearTimeout(timeout);
                     hideLoading();
@@ -998,120 +973,4 @@
             return new Promise((resolve, reject) => {
                 if (typeof MINDAR !== 'undefined' && window.mindARLoaded) {
                     resolve();
-                    return;
-                }
-                
-                let attempts = 0;
-                const maxAttempts = 60; // 6 seconds max (longer for mobile)
-                
-                const checkInterval = setInterval(() => {
-                    attempts++;
-                    if (typeof MINDAR !== 'undefined' && window.mindARLoaded) {
-                        clearInterval(checkInterval);
-                        console.log('MindAR is fully ready');
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        clearInterval(checkInterval);
-                        reject(new Error('MindAR failed to load within timeout period'));
-                    }
-                }, 100);
-            });
-        }
-
-        function stopARExperience() {
-            const mindarComponent = arScene?.components?.['mindar-image'];
-            
-            if (mindarComponent) {
-                mindarComponent.stop();
-            }
-            
-            // Stop any playing audio
-            const audio = document.querySelector('#moses-audio');
-            if (audio) {
-                audio.pause();
-                audio.currentTime = 0;
-            }
-            
-            // Hide AR and show landing page
-            document.getElementById('ar-container').classList.add('hidden');
-            document.getElementById('landing-page').classList.remove('hidden');
-        }
-
-        function startAudioGuide() {
-            showLoading('Loading Audio Guide...');
-            setTimeout(() => {
-                hideLoading();
-                showNotification('Audio Guide activated!', 'success');
-            }, 1500);
-        }
-
-        function showLoading(message) {
-            const overlay = document.createElement('div');
-            overlay.className = 'loading-overlay';
-            overlay.id = 'loading';
-            overlay.innerHTML = `
-                <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
-                <div>${message}</div>
-                <div style="margin-top: 1rem; opacity: 0.7;">Please wait...</div>
-            `;
-            document.body.appendChild(overlay);
-        }
-
-        function hideLoading() {
-            const overlay = document.getElementById('loading');
-            if (overlay) overlay.remove();
-        }
-
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <span style="margin-right: 0.5rem;">${type === 'success' ? '✅' : '❌'}</span>
-                ${message}
-            `;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 4000);
-        }
-
-        function startDemoMode() {
-            try {
-                showLoading('Starting Demo Mode...');
-                
-                // Hide landing page and show AR container
-                document.getElementById('landing-page').classList.add('hidden');
-                document.getElementById('ar-container').classList.remove('hidden');
-                
-                // Simulate AR scene initialization without camera
-                setTimeout(() => {
-                    hideLoading();
-                    showNotification('Demo Mode activated! This simulates the AR interface without camera access.', 'success');
-                    
-                    // Trigger target found event for demo
-                    setTimeout(() => {
-                        showNotification('Simulated target detected! In real AR mode, point your camera at a target image.', 'success');
-                        const mosesAudio = document.querySelector('#moses-audio');
-                        if (mosesAudio) {
-                            mosesAudio.currentTime = 0;
-                            mosesAudio.play().catch(e => console.log('Audio play failed:', e));
-                        }
-                    }, 3000);
-                }, 2000);
-                
-            } catch (error) {
-                console.error('Demo mode failed:', error);
-                hideLoading();
-                showNotification('Demo mode failed: ' + error.message, 'error');
-                stopARExperience();
-            }
-        }
-
-        // Initialize back button
-        document.addEventListener('DOMContentLoaded', function() {
-            const backBtn = document.getElementById('ar-back-btn');
-            if (backBtn) {
-                backBtn.onclick = stopARExperience;
-            }
-        });
-    </script>
-</body>
-</html>
+[...]
